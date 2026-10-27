@@ -138,6 +138,11 @@ function startSignaling(server) {
     ws.isAuthed = false;
     ws.roomId = null;
     ws.role = null;
+    ws.isAlive = true;
+    // Protocol-level pong (from ws.ping) also marks the socket alive.
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
 
     ws.on('message', (raw) => {
       let msg;
@@ -171,6 +176,14 @@ function startSignaling(server) {
         return;
       }
 
+      // --- Application-level heartbeat (keeps the stream session alive) ---
+      // Clients ping periodically; we ack with pong and mark the socket live.
+      if (msg.type === 'ping') {
+        ws.isAlive = true;
+        send(ws, { type: 'pong' });
+        return;
+      }
+
       // --- Everything else requires auth -------------------------------
       if (!ws.isAuthed) {
         send(ws, { type: 'error', error: 'not-joined' });
@@ -201,6 +214,26 @@ function startSignaling(server) {
       /* swallow socket-level errors; close handler does cleanup */
     });
   });
+
+  // Reap dead sockets: ping every interval; terminate any that didn't answer
+  // the previous round. This frees rooms when a peer vanishes without a clean
+  // close (crash, network drop, machine sleep) so reconnects start clean.
+  const HEARTBEAT_INTERVAL = 30000;
+  const reaper = setInterval(() => {
+    for (const ws of wss.clients) {
+      if (ws.isAlive === false) {
+        ws.terminate();
+        continue;
+      }
+      ws.isAlive = false;
+      try {
+        ws.ping();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, HEARTBEAT_INTERVAL);
+  wss.on('close', () => clearInterval(reaper));
 
   return wss;
 }

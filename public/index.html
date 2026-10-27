@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mirror — encrypted screen sharing</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header>
+      <h1>🪞 Mirror</h1>
+      <span class="tag">end-to-end encrypted (WebRTC DTLS-SRTP)</span>
+    </header>
+
+    <main>
+      <!-- Role chooser -->
+      <section id="chooser" class="card">
+        <h2>Choose a role</h2>
+        <p class="muted">
+          Open this page on the machine whose screen you want to share (the
+          <strong>sharer</strong>), and on your FreeBSD box to watch (the
+          <strong>viewer</strong>).
+        </p>
+        <div class="row">
+          <button id="pickShare" class="primary">📡 Share this screen</button>
+          <button id="pickView">📺 View a shared screen</button>
+        </div>
+      </section>
+
+      <!-- Connection form -->
+      <section id="connect" class="card hidden">
+        <h2 id="connectTitle"></h2>
+        <label>
+          Room name
+          <input id="room" type="text" value="home" autocomplete="off" />
+        </label>
+        <label>
+          Shared secret
+          <input id="secret" type="password" placeholder="paste the server secret" autocomplete="off" />
+        </label>
+        <details>
+          <summary>Advanced: TURN / STUN (for use over the internet)</summary>
+          <label>
+            STUN/TURN URL
+            <input id="iceUrl" type="text" placeholder="turn:your.server:3478" autocomplete="off" />
+          </label>
+          <label>
+            TURN username
+            <input id="iceUser" type="text" autocomplete="off" />
+          </label>
+          <label>
+            TURN credential
+            <input id="iceCred" type="password" autocomplete="off" />
+          </label>
+        </details>
+        <div class="row">
+          <button id="go" class="primary"></button>
+          <button id="back">← Back</button>
+        </div>
+        <p id="status" class="status"></p>
+      </section>
+
+      <!-- Video stage (viewer) / preview (sharer) -->
+      <section id="stage" class="card hidden">
+        <div class="stagebar">
+          <span id="stageInfo" class="muted"></span>
+          <div class="row">
+            <button id="fullscreen">⛶ Fullscreen</button>
+            <button id="hangup" class="danger">⏹ Stop</button>
+          </div>
+        </div>
+        <video id="video" autoplay playsinline></video>
+      </section>
+    </main>
+
+    <footer>
+      <span class="muted">
+        Media flows peer-to-peer and is always encrypted. The server only relays
+        signaling.
+      </span>
+    </footer>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

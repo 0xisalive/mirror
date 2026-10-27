@@ -102,6 +102,35 @@ candidates. Across the internet / behind NAT, expand **Advanced** in the UI and
 provide a TURN server (e.g. [coturn](https://github.com/coturn/coturn)). The
 media stays encrypted even when relayed through TURN.
 
+## Staying connected (resilience)
+
+The app tries to keep the stream alive as long as possible rather than ending
+at the first hiccup:
+
+- **Auto-reconnecting signaling** — the WebSocket reconnects with exponential
+  backoff and an application-level heartbeat; a server restart or network blip
+  no longer orphans the session.
+- **ICE restart** — if the WebRTC transport drops to `disconnected`/`failed`,
+  the sharer renegotiates a fresh path instead of tearing down.
+- **Capture auto-restart** — if the sharer's screen capture ends unexpectedly
+  (screen lock, VT switch), the app re-acquires it and hot-swaps the track via
+  `replaceTrack`, usually with no visible interruption.
+- **Viewer keeps waiting** — if the sharer vanishes, the viewer shows
+  "waiting for sharer to reconnect…" and re-renders automatically when it returns.
+
+**Unavoidable limit — a real log-off/log-out:** when the OS session is torn
+down, the screen-capture grant is revoked by the operating system (both macOS
+and Wayland treat this as a security boundary). The app detects the loss and
+offers a **▶ Resume** button; clicking it re-shows the OS screen-picker to
+re-grant. Everything short of a full logoff (lock screen, transient network
+loss, server restart, Wi-Fi roam) recovers automatically.
+
+> Note on "why not QUIC": WebRTC media already runs over UDP with DTLS-SRTP and
+> mature real-time congestion/loss handling. RTP-over-QUIC / WebTransport is not
+> yet supported in Firefox (the FreeBSD viewer), so the resilience above is
+> implemented on the existing WebRTC stack, which keeps the stream alive without
+> sacrificing Firefox compatibility.
+
 ## Security notes
 
 - Certificates are self-signed; you trust them once per browser. For a
